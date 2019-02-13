@@ -1,0 +1,51 @@
+version: '2'
+services:
+  elasticsearch:
+    mem_limit: 2147483648
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.5.4
+    environment:
+      ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+      http.host: 0.0.0.0
+      network.host: 0.0.0.0
+      transport.host: localhost
+    volumes:
+      - LOCAL-PATH:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        hard: -1
+        soft: -1
+    labels:
+      io.rancher.scheduler.affinity:host_label: log=true
+  graylog:
+    image: graylog/graylog:2.5
+    environment:
+      GRAYLOG_PASSWORD_SECRET: your-secret-here
+      GRAYLOG_ROOT_PASSWORD_SHA2: sha2-of-desired-pass
+      GRAYLOG_WEB_ENDPOINT_URI: http://HOST-IP:9000/api
+    volumes:
+    - LOCAL-PATH:/usr/share/graylog/data/journal
+    - LOCAL-PATH:/usr/share/graylog/data/config
+    links:
+    - mongodb:mongo
+    - elasticsearch:elasticsearch
+    ports:
+    - 9000:9000/tcp
+    - 514:514/tcp
+    - 514:514/udp
+    - 12201:12201/tcp
+    - 12201:12201/udp
+    labels:
+      io.rancher.scheduler.affinity:host_label: log=true
+  mongodb:
+    image: mongo:3
+    volumes:
+    - LOCAL-PATH:/data/db
+    labels:
+      io.rancher.scheduler.affinity:host_label: log=true
+volumes:
+  mongo_data:
+    driver: local
+  es_data:
+    driver: local
+  graylog_journal:
+    driver: local
